@@ -1,0 +1,10 @@
+{
+  "skill_name": "trusted-shopper",
+  "version": "1.0.0",
+  "created": "2026-02-19",
+  "description": "Context and configuration for the trusted-shopper skill",
+  "config": {
+  },
+  "metadata": {
+  }
+}
