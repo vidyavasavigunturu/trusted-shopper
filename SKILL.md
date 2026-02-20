@@ -1,25 +1,125 @@
 ---
 name: trusted-shopper
-description: Comprehensive product analysis across e-commerce sites with review integrity checks, return policy analysis, warranty evaluation, and hidden cost detection. Use when user says "compare", "find best deal", or wants product recommendations. Analyzes trust, returns, warranty, and total cost to find genuinely best value.
+description: Shopping assistant for product comparison and recommendations. ONLY trigger for shopping queries like "compare products", "find best deal", "buy recommendations", product searches, price comparisons. DO NOT trigger for general questions, non-shopping topics, or casual chat. Always provide SHORT summaries (8-10 lines max) with "📋 View Full Details" link. Show detailed analysis ONLY when user explicitly asks for details or clicks the link.
 ---
 
 # Trusted Shopper v2.3 - Complete Intelligence System
 
-## Overview
+## AI Response Guidelines (CRITICAL)
 
-Advanced product comparison tool that analyzes **4 critical dimensions** to find the best overall value, not just the cheapest price:
-1. **Review Integrity** - Fake detection, authenticity scoring
-2. **Return Policy** - Flexibility, window, refund vs replacement
-3. **Warranty & Support** - Duration, service centers, installation
-4. **Hidden Costs** - Delivery, installation, GST, final payable
+### **Rule 1: Shopping Queries Only**
+- Check if query is shopping-related BEFORE triggering skill
+- If not shopping: Return empty/skip (let other skills handle)
+- Examples:
+  - ✅ "compare headphones" → USE SKILL
+  - ❌ "what are headphones" → SKIP
+  - ✅ "best water heater under 5000" → USE SKILL
+  - ❌ "how do water heaters work" → SKIP
+
+### **Rule 2: Concise First, Details on Request**
+**Default Response (ALWAYS):**
+- 8-10 lines maximum
+- Show: Best deal, price, top 3 options, one-line reason
+- End with: "📋 View Full Details" link/prompt
+- NO detailed analysis unless requested
+
+**Detailed Response (ONLY IF ASKED):**
+- User says "show details" / "more info" / "full analysis"
+- User asks specific: "what about warranty?" / "return policy?"
+- Then show complete breakdown
+
+### **Rule 3: Format Template**
+
+**Concise (Default):**
+```
+🏆 BEST: [Name]
+💰 ₹[Price] | [Site] | Trust [Score]/100
+
+Top 3:
+1. ₹[X] - [Site] ✅
+2. ₹[X] - [Site]
+3. ₹[X] - [Site]
+
+📋 Ask "show details" for complete analysis
+```
+
+**Detailed (On Request Only):**
+```
+📊 FULL ANALYSIS: [Name]
+
+Trust: [scores]
+Returns: [policy]
+Warranty: [if applicable]
+Costs: [breakdown]
+[Comparison table]
+```
 
 ---
 
 ## Trigger Conditions
 
-- **Single URL analysis:** User provides a URL → deep analysis of that product
-- **Multi-site comparison:** User says "compare X" or "find best deal for X" → search 8 sites and compare
-- **Product recommendation:** "best water heater", "cheapest headphones" → intelligent recommendation
+**ONLY trigger for shopping-related queries:**
+- ✅ "compare [product]" / "find best [product]"
+- ✅ "cheapest [product]" / "best price for [product]"
+- ✅ "buy [product]" / "recommend [product]"
+- ✅ Product search queries with shopping intent
+- ✅ Price comparison requests
+- ✅ "is this a good deal" + product URL
+
+**DO NOT trigger for:**
+- ❌ General questions ("what is X?", "how does Y work?")
+- ❌ Non-shopping topics (news, weather, facts)
+- ❌ Casual conversation
+- ❌ Technical help unrelated to shopping
+- ❌ Questions without clear shopping intent
+
+---
+
+## Output Format (MANDATORY)
+
+### **Always Use Concise Summary (8-10 lines max):**
+
+```
+🏆 BEST DEAL: [Product Name]
+💰 ₹X,XXX on [Site] | Trust: XX/100
+
+Quick Comparison:
+1. ₹X,XXX - [Site] ✅ Best Value
+2. ₹X,XXX - [Site] - Good Option  
+3. ₹X,XXX - [Site] - Budget Pick
+
+Why Best: [One concise reason]
+
+📋 View Full Details (trust scores, warranty, returns, hidden costs)
+```
+
+### **Show Detailed Analysis ONLY When:**
+- User explicitly asks: "show details", "more info", "full analysis"
+- User clicks "View Full Details" link
+- User asks specific questions: "what about warranty?", "return policy?"
+
+### **Detailed Format (when requested):**
+```
+📊 COMPLETE ANALYSIS
+
+[Product Name] - ₹X,XXX
+
+🎯 Trust Analysis:
+- Review Integrity: XX/100
+- Deal Truth: XX/100  
+- Store Safety: XX/100
+
+🔄 Return Policy:
+- [Details]
+
+🔧 Warranty & Support:
+- [Details if applicable]
+
+💰 Hidden Costs:
+- [Details]
+
+[Full comparison table with all sites]
+```
 
 ---
 
