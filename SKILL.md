@@ -238,6 +238,38 @@ Why Best: [One concise reason]
 
 ## Flow A: Single URL Analysis (Deep Dive)
 
+### 0. **MANDATORY: URL Safety Check FIRST**
+
+**Before any analysis, check if URL is a potential scam:**
+
+```bash
+python3 trusted-shopper/scripts/url_safety_check.py "<URL>"
+```
+
+**If risk_level is "high":**
+```
+🚨 SCAM WARNING
+
+This URL shows multiple warning signs:
+[list warnings from script]
+
+🛑 I cannot analyze this URL for your safety.
+
+💡 Stick to trusted sites:
+• amazon.in
+• flipkart.com
+• vijaysales.com
+• myntra.com
+
+What legitimate product can I help you find?
+```
+
+**If risk_level is "medium":**
+Show warnings but allow user to proceed if they confirm.
+
+**If risk_level is "low" or is_safe:**
+Proceed with normal analysis.
+
 ### 1. Obtain the URL
 - Extract from user message or browser extension
 
