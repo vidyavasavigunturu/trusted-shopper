@@ -105,24 +105,38 @@ What product can I help you find?
 
 🏆 BEST: [Name]
 💰 ₹[Price] | [Site] | Trust [Score]/100
+🔗 [Direct Product Link]
 
 Top 3:
-1. ₹[X] - [Site] ✅
-2. ₹[X] - [Site]
-3. ₹[X] - [Site]
+1. ₹[X] - [Site] ✅ [Link]
+2. ₹[X] - [Site] [Link]
+3. ₹[X] - [Site] [Link]
 
+✅ All links verified from official sites
 📋 Ask "show details" for complete analysis
 ```
+
+**CRITICAL - LINK SAFETY:**
+- ✅ Only include links from search results
+- ✅ Verify domain matches official site (amazon.in, flipkart.com, etc.)
+- ❌ NEVER generate or guess product URLs
+- ❌ NEVER use shortened links
+- ✅ Include "✅ All links verified from official sites" footer
 
 **Detailed (On Request Only):**
 ```
 📊 FULL ANALYSIS: [Name]
+💰 ₹[Price] on [Site]
+🔗 [Product Link]
 
 Trust: [scores]
 Returns: [policy]
 Warranty: [if applicable]
 Costs: [breakdown]
-[Comparison table]
+
+[Comparison table with links for each product]
+
+✅ All links verified and trustworthy
 ```
 
 ---
