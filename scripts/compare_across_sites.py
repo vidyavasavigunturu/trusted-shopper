@@ -239,56 +239,49 @@ def analyze_flipkart_product_page(url, tmp_dir):
         print(f"Error analyzing Flipkart product {url}: {e}", file=sys.stderr)
         return None
 
-def search_and_analyze(product_name, max_products=3):
-    """Search across all sites and analyze top results from each"""
+def search_and_analyze(product_name, max_products=2):
+    """Search across all sites and analyze top results from each - OPTIMIZED FOR SPEED"""
     query = quote_plus(product_name)
     results = []
     
+    # Prioritize fast, reliable sites first (Amazon, Flipkart, Vijay Sales)
+    enabled_sites = [s for s in SEARCH_SITES if s.get("enabled", True)]
+    priority_sites = ["Amazon.in", "Flipkart", "Vijay Sales"]
+    fast_sites = [s for s in enabled_sites if s["name"] in priority_sites][:3]
+    
+    total_sites = len(fast_sites)
+    sites_processed = 0
+    
+    print(f"🔍 Searching {total_sites} sites for '{product_name}'...", file=sys.stderr, flush=True)
+    
     with tempfile.TemporaryDirectory() as tmp_dir:
-        for site in SEARCH_SITES:
-            if not site.get("enabled", True):
-                continue
-                
+        for site in fast_sites:
+            sites_processed += 1
+            progress_pct = int((sites_processed / total_sites) * 100)
+            
             search_url = site["search_url"].format(query=query)
             
-            # Fetch search results based on method
-            print(f"Searching {site['name']} (method: {site.get('method', 'fetch')})...", file=sys.stderr)
+            # Progress update
+            print(f"⏳ [{progress_pct}%] Searching {site['name']}...", file=sys.stderr, flush=True)
             
             if site.get('method') == 'browser':
-                # Use Playwright for anti-bot sites
-                product_urls = fetch_with_browser(
-                    site["domain"],
-                    product_name,
-                    max_products
-                )
+                product_urls = fetch_with_browser(site["domain"], product_name, max_products)
             else:
-                # Use simple HTTP fetch
                 html = fetch_url(search_url)
                 if not html:
-                    print(f"Failed to fetch {site['name']}", file=sys.stderr)
+                    print(f"⚠️  {site['name']}: Failed to fetch", file=sys.stderr, flush=True)
                     continue
-                
-                # Extract product URLs (site-specific patterns)
-                product_urls = extract_product_urls(
-                    html, 
-                    site["domain"], 
-                    site["pattern"],
-                    max_products
-                )
+                product_urls = extract_product_urls(html, site["domain"], site["pattern"], max_products)
             
-            print(f"Found {len(product_urls)} products on {site['name']}", file=sys.stderr)
+            print(f"✅ {site['name']}: Found {len(product_urls)} products", file=sys.stderr, flush=True)
             
-            # Analyze each product
-            for url in product_urls:
+            # Analyze each product with progress
+            for idx, url in enumerate(product_urls, 1):
+                print(f"   📊 Analyzing product {idx}/{len(product_urls)}...", file=sys.stderr, flush=True)
                 analysis = analyze_product_page(url, tmp_dir)
                 if analysis:
-                    # Extract return policy data
                     return_policy = analysis.get("return_policy_analysis", {})
-                    
-                    # Extract warranty & support data
                     warranty = analysis.get("warranty_support_analysis", {})
-                    
-                    # Extract hidden costs data
                     hidden_costs = analysis.get("hidden_costs_analysis", {})
                     
                     results.append({
@@ -302,7 +295,7 @@ def search_and_analyze(product_name, max_products=3):
                             "type": return_policy.get("type", []),
                             "method": return_policy.get("method", []),
                             "flexibility_score": return_policy.get("flexibility_score", 50),
-                            "highlights": return_policy.get("highlights", [])[:2]  # Top 2 highlights
+                            "highlights": return_policy.get("highlights", [])[:2]
                         },
                         "warranty": {
                             "duration_months": warranty.get("warranty_duration"),
@@ -310,17 +303,18 @@ def search_and_analyze(product_name, max_products=3):
                             "service_centers": warranty.get("service_centers"),
                             "installation": warranty.get("installation", False),
                             "support_score": warranty.get("support_score", 50),
-                            "highlights": warranty.get("highlights", [])[:2]  # Top 2 highlights
+                            "highlights": warranty.get("highlights", [])[:2]
                         },
                         "hidden_costs": {
                             "delivery": hidden_costs.get("delivery_charge"),
                             "installation": hidden_costs.get("installation_fee"),
                             "total_extra": hidden_costs.get("total_hidden_cost", 0),
                             "transparency_score": hidden_costs.get("transparency_score", 100),
-                            "warnings": hidden_costs.get("warnings", [])[:3]  # Top 3 warnings
+                            "warnings": hidden_costs.get("warnings", [])[:3]
                         }
                     })
     
+    print(f"✨ Analysis complete! Found {len(results)} products total.", file=sys.stderr, flush=True)
     return results
 
 def extract_price_numeric(price_str):
