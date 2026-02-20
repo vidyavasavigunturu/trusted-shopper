@@ -12,6 +12,8 @@ import tempfile
 import os
 import re
 from urllib.parse import quote_plus
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # Bot-friendly and browser-automation sites
 SEARCH_SITES = [
@@ -239,82 +241,100 @@ def analyze_flipkart_product_page(url, tmp_dir):
         print(f"Error analyzing Flipkart product {url}: {e}", file=sys.stderr)
         return None
 
-def search_and_analyze(product_name, max_products=2):
-    """Search across all sites and analyze top results from each - OPTIMIZED FOR SPEED"""
+def search_site(site, product_name, max_products, tmp_dir):
+    """Search a single site and return results - designed for parallel execution"""
     query = quote_plus(product_name)
+    search_url = site["search_url"].format(query=query)
+    site_results = []
+    
+    print(f"⏳ Searching {site['name']}...", file=sys.stderr, flush=True)
+    
+    # Fetch product URLs
+    if site.get('method') == 'browser':
+        product_urls = fetch_with_browser(site["domain"], product_name, max_products)
+    else:
+        html = fetch_url(search_url)
+        if not html:
+            print(f"⚠️  {site['name']}: Failed to fetch", file=sys.stderr, flush=True)
+            return site_results
+        product_urls = extract_product_urls(html, site["domain"], site["pattern"], max_products)
+    
+    print(f"✅ {site['name']}: Found {len(product_urls)} products", file=sys.stderr, flush=True)
+    
+    # Analyze each product
+    for idx, url in enumerate(product_urls, 1):
+        analysis = analyze_product_page(url, tmp_dir)
+        if analysis:
+            return_policy = analysis.get("return_policy_analysis", {})
+            warranty = analysis.get("warranty_support_analysis", {})
+            hidden_costs = analysis.get("hidden_costs_analysis", {})
+            
+            site_results.append({
+                "site": site["name"],
+                "url": url,
+                "price": analysis.get("price_guess"),
+                "scores": analysis.get("scores", {}),
+                "title": analysis.get("title_guess", "")[:80],
+                "return_policy": {
+                    "window_days": return_policy.get("return_window_days"),
+                    "type": return_policy.get("type", []),
+                    "method": return_policy.get("method", []),
+                    "flexibility_score": return_policy.get("flexibility_score", 50),
+                    "highlights": return_policy.get("highlights", [])[:2]
+                },
+                "warranty": {
+                    "duration_months": warranty.get("warranty_duration"),
+                    "type": warranty.get("warranty_type", []),
+                    "service_centers": warranty.get("service_centers"),
+                    "installation": warranty.get("installation", False),
+                    "support_score": warranty.get("support_score", 50),
+                    "highlights": warranty.get("highlights", [])[:2]
+                },
+                "hidden_costs": {
+                    "delivery": hidden_costs.get("delivery_charge"),
+                    "installation": hidden_costs.get("installation_fee"),
+                    "total_extra": hidden_costs.get("total_hidden_cost", 0),
+                    "transparency_score": hidden_costs.get("transparency_score", 100),
+                    "warnings": hidden_costs.get("warnings", [])[:3]
+                }
+            })
+    
+    return site_results
+
+def search_and_analyze(product_name, max_products=2):
+    """Search across all sites IN PARALLEL and analyze top results - OPTIMIZED FOR SPEED"""
     results = []
     
-    # Prioritize fast, reliable sites first (Amazon, Flipkart, Vijay Sales)
+    # Prioritize fast, reliable sites
     enabled_sites = [s for s in SEARCH_SITES if s.get("enabled", True)]
     priority_sites = ["Amazon.in", "Flipkart", "Vijay Sales"]
     fast_sites = [s for s in enabled_sites if s["name"] in priority_sites][:3]
     
     total_sites = len(fast_sites)
-    sites_processed = 0
     
-    print(f"🔍 Searching {total_sites} sites for '{product_name}'...", file=sys.stderr, flush=True)
+    print(f"🔍 Searching {total_sites} sites in parallel for '{product_name}'...", file=sys.stderr, flush=True)
+    start_time = time.time()
     
     with tempfile.TemporaryDirectory() as tmp_dir:
-        for site in fast_sites:
-            sites_processed += 1
-            progress_pct = int((sites_processed / total_sites) * 100)
+        # Search all sites in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            # Submit all site searches simultaneously
+            future_to_site = {
+                executor.submit(search_site, site, product_name, max_products, tmp_dir): site 
+                for site in fast_sites
+            }
             
-            search_url = site["search_url"].format(query=query)
-            
-            # Progress update
-            print(f"⏳ [{progress_pct}%] Searching {site['name']}...", file=sys.stderr, flush=True)
-            
-            if site.get('method') == 'browser':
-                product_urls = fetch_with_browser(site["domain"], product_name, max_products)
-            else:
-                html = fetch_url(search_url)
-                if not html:
-                    print(f"⚠️  {site['name']}: Failed to fetch", file=sys.stderr, flush=True)
-                    continue
-                product_urls = extract_product_urls(html, site["domain"], site["pattern"], max_products)
-            
-            print(f"✅ {site['name']}: Found {len(product_urls)} products", file=sys.stderr, flush=True)
-            
-            # Analyze each product with progress
-            for idx, url in enumerate(product_urls, 1):
-                print(f"   📊 Analyzing product {idx}/{len(product_urls)}...", file=sys.stderr, flush=True)
-                analysis = analyze_product_page(url, tmp_dir)
-                if analysis:
-                    return_policy = analysis.get("return_policy_analysis", {})
-                    warranty = analysis.get("warranty_support_analysis", {})
-                    hidden_costs = analysis.get("hidden_costs_analysis", {})
-                    
-                    results.append({
-                        "site": site["name"],
-                        "url": url,
-                        "price": analysis.get("price_guess"),
-                        "scores": analysis.get("scores", {}),
-                        "title": analysis.get("title_guess", "")[:80],
-                        "return_policy": {
-                            "window_days": return_policy.get("return_window_days"),
-                            "type": return_policy.get("type", []),
-                            "method": return_policy.get("method", []),
-                            "flexibility_score": return_policy.get("flexibility_score", 50),
-                            "highlights": return_policy.get("highlights", [])[:2]
-                        },
-                        "warranty": {
-                            "duration_months": warranty.get("warranty_duration"),
-                            "type": warranty.get("warranty_type", []),
-                            "service_centers": warranty.get("service_centers"),
-                            "installation": warranty.get("installation", False),
-                            "support_score": warranty.get("support_score", 50),
-                            "highlights": warranty.get("highlights", [])[:2]
-                        },
-                        "hidden_costs": {
-                            "delivery": hidden_costs.get("delivery_charge"),
-                            "installation": hidden_costs.get("installation_fee"),
-                            "total_extra": hidden_costs.get("total_hidden_cost", 0),
-                            "transparency_score": hidden_costs.get("transparency_score", 100),
-                            "warnings": hidden_costs.get("warnings", [])[:3]
-                        }
-                    })
+            # Collect results as they complete
+            for future in as_completed(future_to_site):
+                site = future_to_site[future]
+                try:
+                    site_results = future.result()
+                    results.extend(site_results)
+                except Exception as e:
+                    print(f"❌ {site['name']}: Error - {e}", file=sys.stderr, flush=True)
     
-    print(f"✨ Analysis complete! Found {len(results)} products total.", file=sys.stderr, flush=True)
+    elapsed = time.time() - start_time
+    print(f"✨ Analysis complete in {elapsed:.1f}s! Found {len(results)} products total.", file=sys.stderr, flush=True)
     return results
 
 def extract_price_numeric(price_str):
