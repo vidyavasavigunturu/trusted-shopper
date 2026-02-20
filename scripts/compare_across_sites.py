@@ -249,55 +249,67 @@ def search_site(site, product_name, max_products, tmp_dir):
     
     print(f"⏳ Searching {site['name']}...", file=sys.stderr, flush=True)
     
-    # Fetch product URLs
-    if site.get('method') == 'browser':
-        product_urls = fetch_with_browser(site["domain"], product_name, max_products)
-    else:
-        html = fetch_url(search_url)
-        if not html:
-            print(f"⚠️  {site['name']}: Failed to fetch", file=sys.stderr, flush=True)
+    try:
+        # Fetch product URLs with timeout handling
+        if site.get('method') == 'browser':
+            product_urls = fetch_with_browser(site["domain"], product_name, max_products)
+        else:
+            html = fetch_url(search_url)
+            if not html:
+                print(f"⚠️  {site['name']}: Failed to fetch", file=sys.stderr, flush=True)
+                return site_results
+            product_urls = extract_product_urls(html, site["domain"], site["pattern"], max_products)
+        
+        if not product_urls:
+            print(f"⚠️  {site['name']}: No products found", file=sys.stderr, flush=True)
             return site_results
-        product_urls = extract_product_urls(html, site["domain"], site["pattern"], max_products)
-    
-    print(f"✅ {site['name']}: Found {len(product_urls)} products", file=sys.stderr, flush=True)
-    
-    # Analyze each product
-    for idx, url in enumerate(product_urls, 1):
-        analysis = analyze_product_page(url, tmp_dir)
-        if analysis:
-            return_policy = analysis.get("return_policy_analysis", {})
-            warranty = analysis.get("warranty_support_analysis", {})
-            hidden_costs = analysis.get("hidden_costs_analysis", {})
             
-            site_results.append({
-                "site": site["name"],
-                "url": url,
-                "price": analysis.get("price_guess"),
-                "scores": analysis.get("scores", {}),
-                "title": analysis.get("title_guess", "")[:80],
-                "return_policy": {
-                    "window_days": return_policy.get("return_window_days"),
-                    "type": return_policy.get("type", []),
-                    "method": return_policy.get("method", []),
-                    "flexibility_score": return_policy.get("flexibility_score", 50),
-                    "highlights": return_policy.get("highlights", [])[:2]
-                },
-                "warranty": {
-                    "duration_months": warranty.get("warranty_duration"),
-                    "type": warranty.get("warranty_type", []),
-                    "service_centers": warranty.get("service_centers"),
-                    "installation": warranty.get("installation", False),
-                    "support_score": warranty.get("support_score", 50),
-                    "highlights": warranty.get("highlights", [])[:2]
-                },
-                "hidden_costs": {
-                    "delivery": hidden_costs.get("delivery_charge"),
-                    "installation": hidden_costs.get("installation_fee"),
-                    "total_extra": hidden_costs.get("total_hidden_cost", 0),
-                    "transparency_score": hidden_costs.get("transparency_score", 100),
-                    "warnings": hidden_costs.get("warnings", [])[:3]
-                }
-            })
+        print(f"✅ {site['name']}: Found {len(product_urls)} products", file=sys.stderr, flush=True)
+        
+        # Analyze each product
+        for idx, url in enumerate(product_urls, 1):
+            try:
+                analysis = analyze_product_page(url, tmp_dir)
+                if analysis:
+                    return_policy = analysis.get("return_policy_analysis", {})
+                    warranty = analysis.get("warranty_support_analysis", {})
+                    hidden_costs = analysis.get("hidden_costs_analysis", {})
+                    
+                    site_results.append({
+                        "site": site["name"],
+                        "url": url,
+                        "price": analysis.get("price_guess"),
+                        "scores": analysis.get("scores", {}),
+                        "title": analysis.get("title_guess", "")[:80],
+                        "return_policy": {
+                            "window_days": return_policy.get("return_window_days"),
+                            "type": return_policy.get("type", []),
+                            "method": return_policy.get("method", []),
+                            "flexibility_score": return_policy.get("flexibility_score", 50),
+                            "highlights": return_policy.get("highlights", [])[:2]
+                        },
+                        "warranty": {
+                            "duration_months": warranty.get("warranty_duration"),
+                            "type": warranty.get("warranty_type", []),
+                            "service_centers": warranty.get("service_centers"),
+                            "installation": warranty.get("installation", False),
+                            "support_score": warranty.get("support_score", 50),
+                            "highlights": warranty.get("highlights", [])[:2]
+                        },
+                        "hidden_costs": {
+                            "delivery": hidden_costs.get("delivery_charge"),
+                            "installation": hidden_costs.get("installation_fee"),
+                            "total_extra": hidden_costs.get("total_hidden_cost", 0),
+                            "transparency_score": hidden_costs.get("transparency_score", 100),
+                            "warnings": hidden_costs.get("warnings", [])[:3]
+                        }
+                    })
+            except Exception as e:
+                print(f"⚠️  {site['name']}: Error analyzing product {idx} - {e}", file=sys.stderr, flush=True)
+                continue
+                
+    except Exception as e:
+        print(f"❌ {site['name']}: Site error - {e}", file=sys.stderr, flush=True)
     
     return site_results
 
