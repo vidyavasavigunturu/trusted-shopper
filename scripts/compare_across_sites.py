@@ -102,7 +102,7 @@ SEARCH_SITES = [
 def fetch_with_browser(domain, query, max_results=3):
     """Fetch product URLs using Playwright (for anti-bot sites)"""
     try:
-        # Call the browser_fetch.py script
+        # Call the browser_fetch.py script with extended 90s timeout
         import subprocess
         script_path = os.path.join(os.path.dirname(__file__), "browser_fetch.py")
         
@@ -110,7 +110,7 @@ def fetch_with_browser(domain, query, max_results=3):
             ["python3", script_path, "--domain", domain, "--query", query, "--max-results", str(max_results)],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=90  # Increased from 60s to 90s to reduce timeouts
         )
         
         if result.returncode == 0:
@@ -328,13 +328,19 @@ def search_and_analyze(product_name, max_products=2):
     start_time = time.time()
     
     with tempfile.TemporaryDirectory() as tmp_dir:
-        # Search all sites in parallel using ThreadPoolExecutor
+        # Search all sites in parallel with STAGGERED STARTS to avoid resource contention
         with ThreadPoolExecutor(max_workers=3) as executor:
-            # Submit all site searches simultaneously
-            future_to_site = {
-                executor.submit(search_site, site, product_name, max_products, tmp_dir): site 
-                for site in fast_sites
-            }
+            # Submit all site searches with 4-second delays between starts
+            future_to_site = {}
+            for i, site in enumerate(fast_sites):
+                # Stagger: 0s, 4s, 8s delays
+                delay = i * 4
+                if delay > 0:
+                    print(f"⏱️  Staggering {site['name']} start by {delay}s to reduce load...", file=sys.stderr, flush=True)
+                    time.sleep(delay)
+                
+                future = executor.submit(search_site, site, product_name, max_products, tmp_dir)
+                future_to_site[future] = site
             
             # Collect results as they complete
             for future in as_completed(future_to_site):
