@@ -250,10 +250,4 @@ MIT License - See LICENSE file for details
 
 ---
 
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
----
-
 **Built with ❤️ for smart shoppers everywhere** 🛍️💰
