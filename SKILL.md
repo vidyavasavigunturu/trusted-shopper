@@ -103,27 +103,26 @@ What product can I help you find?
 ```
 🔍 Searching for [product]...
 
-[Show visual progress bar:]
-Progress: ████████░░ 3/3 sites | ⏱️ Completed in Xs
+[ALWAYS show this progress line using data from search_status:]
+Progress: ████████░░ [successful_sites]/[total_sites] sites | ⏱️ Completed in [elapsed_time]s
 
 🏆 BEST: [Name]
 💰 ₹[Price] | [Site] | Trust [Score]/100
-🔗 [Product URL from results.url]
+🔗 [Product URL]
 
 Top 3:
 1. ₹[X] - [Site] - [URL] ✅
 2. ₹[X] - [Site] - [URL]
 3. ₹[X] - [Site] - [URL]
 
-✅ All links from official sites
 📋 Ask "show details" for full analysis
 ```
 
-**Progress Bar Format:**
-- Extract sites_checked and sites_found from JSON
-- Show: ████████░░ [sites_found]/[sites_checked] sites
-- Include timing if available from logs
-- Visual: 10 blocks total, filled based on completion %
+**MANDATORY Progress Bar:**
+- Extract: search_status.successful_sites, search_status.total_sites, elapsed_time
+- Format: "Progress: ████████░░ X/Y sites | ⏱️ Completed in Zs"
+- Visual blocks: Fill 8 blocks if all sites done, proportional if partial
+- ALWAYS include this line - it's not optional
 
 **Detailed (On Request Only):**
 ```
