@@ -52,8 +52,6 @@ What would you like to shop for?
 ```
 🛍️ I help you shop smarter!
 
-📖 Details: github.com/vidyavasavigunturu/trusted-shopper
-
 What product can I help you find?
 ```
 
