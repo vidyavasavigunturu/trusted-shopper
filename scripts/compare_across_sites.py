@@ -401,13 +401,16 @@ def main():
     parser.add_argument("--max-results", type=int, default=3, help="Max products per site")
     args = parser.parse_args()
     
+    start_time = time.time()
     results = search_and_analyze(args.product, args.max_results)
+    elapsed_time = time.time() - start_time
     
     if not results:
         print(json.dumps({
             "error": "No results found across any sites",
             "results": [],
-            "product": args.product
+            "product": args.product,
+            "elapsed_time": round(elapsed_time, 1)
         }))
         return
     
@@ -425,7 +428,14 @@ def main():
         "best_deal": best,
         "sites_checked": len([s for s in SEARCH_SITES if s.get("enabled", True)]),
         "sites_found": len(set(r["site"] for r in results)),
-        "total_products": len(results)
+        "total_products": len(results),
+        "elapsed_time": round(elapsed_time, 1),
+        "search_status": {
+            "total_sites": 3,
+            "successful_sites": len(set(r["site"] for r in results)),
+            "products_found": len(results),
+            "duration_seconds": round(elapsed_time, 1)
+        }
     }
     
     print(json.dumps(output, ensure_ascii=False, indent=2))

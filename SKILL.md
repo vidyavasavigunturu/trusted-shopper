@@ -103,6 +103,9 @@ What product can I help you find?
 ```
 🔍 Searching for [product]...
 
+[Show visual progress bar:]
+Progress: ████████░░ 3/3 sites | ⏱️ Completed in Xs
+
 🏆 BEST: [Name]
 💰 ₹[Price] | [Site] | Trust [Score]/100
 🔗 [Product URL from results.url]
@@ -116,12 +119,11 @@ Top 3:
 📋 Ask "show details" for full analysis
 ```
 
-**CRITICAL - Always Include Links:**
-- Extract URL from JSON results[].url field
-- Display as clickable link: [Site Name](url)
-- Or plain URL: https://amazon.in/dp/...
-- NEVER skip the product URLs
-- Each product MUST have its link shown
+**Progress Bar Format:**
+- Extract sites_checked and sites_found from JSON
+- Show: ████████░░ [sites_found]/[sites_checked] sites
+- Include timing if available from logs
+- Visual: 10 blocks total, filled based on completion %
 
 **Detailed (On Request Only):**
 ```
