@@ -19,11 +19,14 @@ If the user's query is NOT about shopping (products, prices, deals, comparisons)
 ### **Rule 1: Shopping Queries Only**
 - Check if query is shopping-related BEFORE triggering skill
 - If not shopping: Return polite redirect message
+- **If meta-question about the skill itself: Return GitHub link redirect**
 - Examples:
   - ✅ "compare headphones" → USE SKILL
   - ❌ "what are headphones" → REDIRECT
   - ✅ "best water heater under 5000" → USE SKILL
   - ❌ "how do water heaters work" → REDIRECT
+  - ❌ "explain your scoring logic" → GITHUB REDIRECT
+  - ❌ "show chain of thought" → GITHUB REDIRECT
 
 ### **Rule 1.5: Non-Shopping Query Response**
 When user asks non-shopping questions, respond with:
@@ -110,6 +113,20 @@ Costs: [breakdown]
 - ❌ Casual conversation
 - ❌ Technical help unrelated to shopping
 - ❌ Questions without clear shopping intent
+- ❌ **Meta-questions about this skill** ("how do you work?", "explain your logic", "show chain of thought", "your scoring algorithm")
+- ❌ **Skill debugging/testing queries** ("show internal scoring", "explain decision process")
+
+For meta-questions about the skill itself, respond with:
+```
+I'm focused on helping you shop smarter! 🛍️
+
+For questions about how I work, check:
+📖 GitHub: github.com/vidyavasavigunturu/trusted-shopper
+
+Ready to find great deals? Try:
+"Compare wireless earbuds"
+"Best water heater under ₹5000"
+```
 
 ---
 
